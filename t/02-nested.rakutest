@@ -1,6 +1,8 @@
 use JSON::Mask;
 use Test;
 
+plan 12;
+
 is-deeply mask('a(b,c)', %(a => %(b => 1, c => 2))),
         %(a => %(b => 1, c => 2));
 
@@ -36,4 +38,4 @@ throws-like { mask('a(b),-a', %()) },
 throws-like { mask('a(b(c(d,d))', %()) },
         Exception, message => /"Key d already present in a.b.c"/;
 
-done-testing;
+# vim: expandtab shiftwidth=4

@@ -158,3 +158,130 @@ multi sub mask($mask, \data) is export {
         die "Unable to parse JSON Mask";
     }
 }
+
+=begin pod
+
+=head1 NAME
+
+JSON::Mask - JSON filtering
+
+=head1 SYNOPSIS
+
+=begin code :lang<raku>
+
+use JSON::Mask;
+
+# Select keys "a", "b", and "c".
+mask('a,b,c', %data);
+
+my $mask = compile-mask('a,b,c');
+mask($mask, %data1);
+
+=end code
+
+=head1 DESCRIPTION
+
+Allows to filter JSON-like data so it's suitable for public consumption.
+The pattern describes the schema, and the module trims the extra data.
+
+=head2 Basic syntax
+
+To select keys, list them in a comma-separated string:
+
+=begin code :lang<raku>
+
+# Select keys "a", "b", and "c".
+mask('a,b,c', %data);
+
+=end code
+
+To select all keys except a few, negate them:
+
+=begin code :lang<raku>
+
+# Select all the keys that aren't "a" or "b".
+mask('-a,-b', %data);
+
+=end code
+
+To select subkeys, use parentheses:
+
+=begin code :lang<raku>
+
+# Keeps only "a", and in it only its subkeys "b" and "c".
+mask('a(b,c)', %data);
+
+=end code
+
+You can of course combine them:
+
+=begin code :lang<raku>
+
+# Select everything but "password", but only keep the
+# "name" and "email" subkeys from "profile".
+mask('-password,profile(name,email)', %data);
+
+=end code
+
+You can quote a key if it contains "special" characters:
+
+=begin code :lang<raku>
+
+# Select everything but "password" and "password-confirmation".
+mask('-password,-"password-confirmation"', %data);
+
+=end code
+
+=head2 Compilation
+
+If you want to reuse masks, you can pre-compile them:
+
+=begin code :lang<raku>
+
+my $mask = compile-mask('a,b,c');
+mask($mask, %data1);
+mask($mask, %data2);
+mask($mask, %data3);
+
+=end code
+
+=head2 Array handling
+
+The module handles arrays without you needing to do anything:
+a mask will be applied recursively on each element of the array.
+
+=begin code :lang<raku>
+
+my @data =
+  %(id => 1, name => "First Volume"),
+  %(id => 2, name => "Second Adventure"),
+  %(id => 3, name => "Final Countdown")
+;
+mask('id', @data); # Select key "id" in each sub-hash
+
+=end code
+
+=head2 Error handling
+
+The module ignores missing keys.  It will however throw an exception
+if a nested key ("a(b,c)") is not actually C<Associative> (or
+C<Positional>).
+
+=head1 AUTHOR
+
+vendethiel
+
+Source can be located at: https://github.com/raku-community-modules/JSON-Mask .
+Comments and Pull Requests are welcome.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2020 Edument AB
+
+Copyright 2024 The Raku Community
+
+This library is free software; you can redistribute it and/or modify it under the Artistic License 2.0.
+
+=end pod
+
+# vim: expandtab shiftwidth=4

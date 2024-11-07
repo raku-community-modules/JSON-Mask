@@ -1,6 +1,8 @@
 use JSON::Mask;
 use Test;
 
+plan 7;
+
 is-deeply mask('-a', %(a => 1)), %();
 is-deeply mask('-d', %(a => 1, b => 2, c => 3)), %(a => 1, b => 2, c => 3);
 is-deeply mask('-a,-b', %(a => 1, b => 2, c => 3)), %(c => 3);
@@ -15,4 +17,4 @@ throws-like { mask('a,-a', %()) },
 throws-like { mask('-a,a', %()) },
         Exception, message => /"Cannot have a positive rule after a negative rule"/;
 
-done-testing;
+# vim: expandtab shiftwidth=4

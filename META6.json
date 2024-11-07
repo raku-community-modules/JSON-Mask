@@ -1,16 +1,24 @@
 {
-  "name": "JSON::Mask",
+  "auth": "zef:raku-community-modules",
+  "build-depends": [
+  ],
+  "depends": [
+  ],
   "description": "JSON filtering",
-  "version": "1.0",
-  "perl": "6.*",
-  "auth": "edument",
-  "depends": [],
-  "build-depends": [],
-  "test-depends": [],
-  "provides": {
-    "JSON::Mask": "lib/JSON/Mask.pm6"
-  },
-  "resources": [],
   "license": "Artistic-2.0",
-  "source-url": "https://github.com/edumentab/JSONMask.git"
+  "name": "JSON::Mask",
+  "perl": "6.*",
+  "provides": {
+    "JSON::Mask": "lib/JSON/Mask.rakumod"
+  },
+  "resources": [
+  ],
+  "source-url": "https://github.com/raku-community-modules/JSON-Mask.git",
+  "tags": [
+    "JSON",
+    "FILTER"
+  ],
+  "test-depends": [
+  ],
+  "version": "1.0"
 }
