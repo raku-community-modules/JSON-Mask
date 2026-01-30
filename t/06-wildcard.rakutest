@@ -1,0 +1,22 @@
+use JSON::Mask;
+use Test;
+
+plan 7;
+
+is-deeply mask('*,a(b)', %(a => %(b => 1, c => 2), d => 3)), %(a => %(b => 1), d => 3);
+
+throws-like { mask('*,-a', %()) },
+        Exception, message => /"A negative key implies a wildcard"/;
+throws-like { mask('-a,*', %()) },
+        Exception, message => /"A negative key implies a wildcard"/;
+
+throws-like { mask('*,*', %()) },
+        Exception, message => /"Duplicate wildcard"/;
+throws-like { mask('*', %()) },
+        Exception, message => /"wildcard can be elided"/;
+throws-like { mask('a(*)', %()) },
+        Exception, message => /"wildcard can be elided in a"/;
+throws-like { mask('*,passkey', %()) },
+        Exception, message => /"wildcard includes all keys, you can remove 'passkey'"/;
+
+# vim: expandtab shiftwidth=4

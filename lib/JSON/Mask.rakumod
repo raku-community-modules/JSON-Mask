@@ -10,6 +10,9 @@ class AST::Rule::Negative is AST::Rule {
     has Str $.key;
 }
 
+class AST::Rule::Wildcard is AST::Rule {
+}
+
 class AST::Rule::Nested is AST::Rule {
     has Str $.key;
     has $.pattern; # AST::Pattern:D TODO type it when Comma recognizes stub
@@ -18,9 +21,27 @@ class AST::Rule::Nested is AST::Rule {
 class AST::Pattern {
     has AST::Rule:D @.rules;
 
+    method wildcard { any(@!rules) ~~ AST::Rule::Wildcard }
     method positives { @!rules.grep(AST::Rule::Positive) }
     method negatives { @!rules.grep(AST::Rule::Negative) }
     method nesteds { @!rules.grep(AST::Rule::Nested) }
+}
+
+class X::JSON::Mask::SoleWildcard is Exception {
+    has @.stack;
+
+    method message() {
+         "A pattern solely consisting of a wildcard can be elided" ~ (" in @.stack.join(".")" if @.stack);
+    }
+}
+
+class X::JSON::Mask::PositiveWithWildcard is Exception {
+    has @.positives;
+
+    method message() {
+        my $keys = @.positives.map("'" ~ *.key ~ "'").join(", ");
+        "A wildcard includes all keys, you can remove $keys"
+    }
 }
 
 class X::ParseFail is Exception {
@@ -49,6 +70,7 @@ grammar Mask {
     token pattern {
         :my $*has-seen-positive = False;
         :my $*has-seen-negative = False;
+        :my $*has-seen-wildcard = False;
         :my @*seen-keys;
         <rule>+ %% ','
     }
@@ -67,9 +89,18 @@ grammar Mask {
     token rule:negative {
         '-' <key>
         [ <?{ $*has-seen-positive }> <.panic: "Cannot have a negative rule after a positive rule">
+        || <?{ $*has-seen-wildcard }> <.panic: "A negative key implies a wildcard">
         || { $*has-seen-negative = True; } ]
         { self.check-seen($<key>.made) }
         [ <?before '('> <.panic: "Cannot have a nested negative group"> ]?
+    }
+
+    token rule:wildcard {
+        '*'
+        [ <?{ $*has-seen-wildcard }> <.panic: "Duplicate wildcard">
+        || <?{ $*has-seen-negative }> <.panic: "A negative key implies a wildcard">
+        || { $*has-seen-wildcard = True }
+        ]
     }
 
     method check-seen(Str $key) {
@@ -96,7 +127,14 @@ class MaskActions {
     }
 
     method pattern($/) {
-        make AST::Pattern.new(rules => $<rule>>>.made)
+        my @rules = $<rule>».made;
+        my $has-wildcard = any(@rules) ~~ AST::Rule::Wildcard;
+        if $has-wildcard {
+            die X::JSON::Mask::SoleWildcard.new(:@*stack) if @rules == 1;
+            my @positives = @rules.grep(AST::Rule::Positive);
+            die X::JSON::Mask::PositiveWithWildcard.new(:@positives) if @positives;
+        }
+        make AST::Pattern.new(rules => $<rule>».made)
     }
 
     method rule:positive ($/) {
@@ -111,6 +149,10 @@ class MaskActions {
         make AST::Rule::Negative.new(key => $<key>.made)
     }
 
+    method rule:wildcard ($/) {
+        make AST::Rule::Wildcard.new
+    }
+
     method key:simple ($/) { make ~$/ }
     method key:quoted ($/) { make ~$0 }
 }
@@ -123,7 +165,9 @@ multi sub evaluate(AST::Pattern $pattern, @data) {
 
 multi sub evaluate(AST::Pattern $pattern, %data) {
     my %scooped;
-    if $pattern.negatives -> @negatives {
+    if $pattern.wildcard {
+        %scooped = %data; # Start with the entire data, the nesteds will be remapped
+    } elsif $pattern.negatives -> @negatives {
         %scooped = %data{keys %data.keys (-) @negatives.map(*.key)}:kv;
     } elsif $pattern.positives -> @positives {
         %scooped = %data{@positives.map(*.key)}:kv;
@@ -229,6 +273,15 @@ You can quote a key if it contains "special" characters:
 
 # Select everything but "password" and "password-confirmation".
 mask('-password,-"password-confirmation"', %data);
+
+=end code
+
+If you need everything, but you want only the subkeys of some elements, you can include a wildcard.
+
+=begin code :lang<raku>
+
+# Select everything, but in "profile" only keep "name" and "email".
+mask("*,profile(name,email)", %data);
 
 =end code
 
