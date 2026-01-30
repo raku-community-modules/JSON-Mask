@@ -85,8 +85,7 @@ grammar Mask {
 
     method panic($reason is copy) {
         $reason ~= ' in ' ~ @*stack.join('.') if @*stack;
-        die X::ParseFail.new(reason => $reason ~ (' in ' ~ @*stack.join('.') if @*stack),
-                             :cursor(self));
+        die X::ParseFail.new(:$reason, :cursor(self));
     }
 }
 

@@ -1,7 +1,7 @@
 use JSON::Mask;
 use Test;
 
-plan 7;
+plan 8;
 
 is-deeply mask('-a', %(a => 1)), %();
 is-deeply mask('-d', %(a => 1, b => 2, c => 3)), %(a => 1, b => 2, c => 3);
@@ -16,5 +16,8 @@ throws-like { mask('a,-a', %()) },
 
 throws-like { mask('-a,a', %()) },
         Exception, message => /"Cannot have a positive rule after a negative rule"/;
+
+throws-like { mask('a(-a,-a)', %()) },
+        Exception, message => /"Key a already present in a at line 1"/;
 
 # vim: expandtab shiftwidth=4
